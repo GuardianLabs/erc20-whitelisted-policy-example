@@ -4,14 +4,17 @@ pragma solidity ^0.8.29;
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IWhitelist } from "../../../policy/stub/interfaces/IWhitelist.sol";
 
-contract ERC20PolicyEnforced is ERC20, ERC165, Ownable /* , PolicyHandlerSTUB */ {
-    constructor() ERC20("ERC20Enforced", "GRDERC20") Ownable(msg.sender) {
+contract ERC20PolicyEnforcedMock is ERC20, ERC165, Ownable {
+    address public policyAddress;
+
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable(msg.sender) {
         _mint(msg.sender, 100 ether);
     }
 
     function transfer(address to, uint256 value) public override returns (bool result) {
-        // bool isEnforced = PolicyHandlerSTUB(address(this)).evaluate
+        _beforeTransfer(to);
         result = super.transfer(to, value);
     }
 
@@ -20,15 +23,21 @@ contract ERC20PolicyEnforced is ERC20, ERC165, Ownable /* , PolicyHandlerSTUB */
         address to,
         uint256 value
     ) public override returns (bool result) {
-        // bool isEnforced = PolicyHandlerSTUB(address(this)).evaluate
+        _beforeTransfer(to);
         result = super.transferFrom(from, to, value);
     }
 
-    function assignOrReasignPolicy(address policy) public onlyOwner {
-        // PolicyHandlerSTUB(address(this)).set or reset;
+    function assignPolicyAddress(address policy) public onlyOwner {
+        policyAddress = policy;
     }
 
-    function mintToAddress(address to, uint256 amount) /* Anyone can mint */ public {
+    function _beforeTransfer(address to) private view {
+        if (!IWhitelist(policyAddress).evaluate(to)) {
+            revert("Not whitelisted");
+        }
+    }
+
+    function mintToAddress(address to, uint256 amount /* Anyone can mint */) public {
         _mint(to, amount);
     }
 

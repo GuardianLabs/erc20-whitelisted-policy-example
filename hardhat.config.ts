@@ -17,6 +17,7 @@ import {
   REPORT_GAS,
 } from './config-hardhat';
 import { Config } from './config-hardhat/env-config-reader';
+import "hardhat-tracer";
 
 const MAX_ACCOUNT_NUMBER = 30;
 const DEFAULT_BALANCE_PER_ADDRESS = '166000000000000000000';

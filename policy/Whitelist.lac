@@ -1,0 +1,7 @@
+var address _checkedAddress;
+
+artifact WHITELIST = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+
+instance bool whitelist_node of WHITELIST takes (_checkedAddress);
+
+evaluate whitelist_node;
