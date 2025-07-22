@@ -16,7 +16,7 @@
     "node": ">=18.20.4"
   },
   "publishConfig": {
-    "@guardian-network:registry": "https://gitlab.com/api/v4/projects/69589082/packages/npm/"
+    "@guardian-network:registry": "https://gitlab.com/api/v4/projects/71825808/packages/npm/"
   },
   "scripts": {
     "build": "tsc -p tsconfig-prod.json && pnpm format:ts:fix && pnpm copy-dts",
