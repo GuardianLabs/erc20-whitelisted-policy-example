@@ -1,0 +1,12 @@
+node_modules
+dist
+
+#Hardhat files
+cache
+artifacts
+build-info
+
+src/typechain/**
+
+ignition/deployments/chain-84532/**
+ignition/deployments/chain-84532

@@ -1,0 +1,31 @@
+# Ignore everything
+*
+
+# But not src directory
+!src/
+
+# Ignore specific files and directories
+.git/
+node_modules/
+test/
+ignition/
+hardhat-scripts/
+contracts/
+signgen/
+cache/
+artifacts/
+config-hardhat/
+.vscode/
+
+# Ignore configuration files
+.npmrc
+.gitignore
+.nycrc
+.prettierignore
+.prettierrc
+.solhint.json
+.solhintignore
+tsconfig*.json
+eslint.config.mjs
+hardhat.config.ts
+.DS_Store

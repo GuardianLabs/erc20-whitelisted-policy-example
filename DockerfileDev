@@ -1,0 +1,19 @@
+ARG IMAGE=registry.gitlab.com/guardian-docker/registry/node-base:20.11-bookworm-slim
+
+FROM ${IMAGE} as build
+
+ARG GUARDIAN_NPM_TOKEN
+ARG PNPM_VERSION=8.15.1
+ARG NODE_ENV=development
+
+WORKDIR /app
+
+RUN npm instal -g --save-exact pnpm@${PNPM_VERSION}; pnpm -v; node -v;
+RUN npm instal -g rimraf;
+
+COPY . .
+
+RUN pnpm install
+
+
+ENV GUARDIAN_NPM_TOKEN=dummy
