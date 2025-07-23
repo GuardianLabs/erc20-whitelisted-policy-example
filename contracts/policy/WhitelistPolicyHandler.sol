@@ -3,6 +3,6 @@ pragma solidity ^0.8.29;
 
 import { PolicyHandler } from "@guardian-network/policy-contracts/contracts/PolicyHandler.sol";
 
-contract WhitelistPolicy is PolicyHandler {
+contract WhitelistPolicyHandler is PolicyHandler {
     constructor(address _admin) PolicyHandler(_admin) {}
 }

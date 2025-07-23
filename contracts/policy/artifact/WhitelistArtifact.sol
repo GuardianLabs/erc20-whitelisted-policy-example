@@ -4,43 +4,14 @@ pragma solidity ^0.8.29;
 import {
     StatelessArtifactBase
 } from "@guardian-network/policy-contracts/contracts/pre-defined/common/basis/StatelessArtifactBase.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IterableMapping } from "../../libs/IterableMapping.sol";
 import {
     ADDRESS,
     BOOL
 } from "@guardian-network/policy-contracts/contracts/pre-defined/constants/Export.sol";
+import { WhitelistInternal } from "./WhitelistInternal.sol";
 
-contract WhitelistArtifact is StatelessArtifactBase, Ownable {
-    using IterableMapping for IterableMapping.AddressSet;
-
-    IterableMapping.AddressSet private whitelist;
-
-    constructor() Ownable(msg.sender) {}
-
-    function addToWhitelist(address[] calldata addresses) external onlyOwner {
-        whitelist.add(addresses);
-    }
-
-    function removeFromWhitelist(address[] calldata addresses) external onlyOwner {
-        whitelist.remove(addresses);
-    }
-
-    function nukeWhitelist() external onlyOwner {
-        whitelist.clear();
-    }
-
-    function isWhitelisted(address _address) public view returns (bool) {
-        return whitelist.contains(_address);
-    }
-
-    function getWhitelist() external view returns (address[] memory) {
-        return whitelist.getValues();
-    }
-
-    function whitelistCount() external view returns (uint256) {
-        return whitelist.length();
-    }
+contract WhitelistArtifact is StatelessArtifactBase, WhitelistInternal {
+    constructor() {}
 
     function getExecDescriptor()
         external

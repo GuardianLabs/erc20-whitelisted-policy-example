@@ -5,13 +5,13 @@ import { ethers } from 'hardhat';
 import {
   EnforcedToken,
   WhitelistArtifact,
-  WhitelistPolicy,
+  WhitelistPolicyHandler,
 } from '../src/typechain';
 
 describe('EnforcedToken', function () {
   let token: EnforcedToken;
   let whitelistArtifact: WhitelistArtifact;
-  let policy: WhitelistPolicy;
+  let policy: WhitelistPolicyHandler;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -34,7 +34,7 @@ describe('EnforcedToken', function () {
 
     // Deploy whitelist policy contract
     const WhitelistPolicyFactory =
-      await ethers.getContractFactory('WhitelistPolicy');
+      await ethers.getContractFactory('WhitelistPolicyHandler');
     policy = await WhitelistPolicyFactory.deploy(await token.getAddress());
     await policy.waitForDeployment();
 

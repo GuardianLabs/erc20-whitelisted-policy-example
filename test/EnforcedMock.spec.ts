@@ -1,11 +1,11 @@
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { EnforcedTokenMock, Whitelist } from '../src/typechain';
+import { EnforcedTokenMock, WhitelistStub } from '../src/typechain';
 
 describe('EnforcedTokenMock', function () {
   let token: EnforcedTokenMock;
-  let whitelist: Whitelist;
+  let whitelist: WhitelistStub;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -15,7 +15,7 @@ describe('EnforcedTokenMock', function () {
     [owner, user1, user2, user3] = await ethers.getSigners();
 
     // Deploy whitelist contract (empty initially - no destinations added)
-    const WhitelistFactory = await ethers.getContractFactory('Whitelist');
+    const WhitelistFactory = await ethers.getContractFactory('WhitelistStub');
     whitelist = await WhitelistFactory.deploy();
     await whitelist.waitForDeployment();
 
