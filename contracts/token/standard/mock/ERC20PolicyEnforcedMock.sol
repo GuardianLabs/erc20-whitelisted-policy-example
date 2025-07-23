@@ -4,7 +4,7 @@ pragma solidity ^0.8.29;
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IWhitelist } from "../../../policy/stub/interfaces/IWhitelist.sol";
+import { IWhitelist } from "../../../policy/stub/interfaces/InterfacesStub.sol";
 
 contract ERC20PolicyEnforcedMock is ERC20, ERC165, Ownable {
     address public policyAddress;
