@@ -24,16 +24,6 @@ const main = async () => {
   };
 
   await verifyContract(receivableCollectionVerifyData);
-
-  // PUT YOUR PARAMS AT THIS POINT
-  const bearerCollectionVerofyData: ContractVerifyData = {
-    address: '0xfF9E23681b7Aa6d8dFf60B2Edd2D2483c5b16c34',
-    constructorArguments: [
-      '0xcA68beE1A2EF61344b2e6acBdCC718Ec92937Fd0', // admin
-    ],
-  };
-
-  await verifyContract(bearerCollectionVerofyData);
 };
 
 main().catch(console.error);
