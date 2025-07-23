@@ -3,7 +3,7 @@
     "nodes": [
       {
         "id": "0xd94459a37bf48778e3fcf1afbe1462b765031c33c9a67de774986bf61501ac8c",
-        "artifactAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "artifactAddress": "0x9c991b8853e0d3Da50b3DE7378a3364fF3aEaA31",
         "constantExecArgs": [],
         "variableExecArgs": [
           0

@@ -8,7 +8,7 @@ import {
   Wallet,
 } from 'ethers';
 import { ethers } from 'hardhat';
-import { MinSigner } from '../signing/types';
+// import { MinSigner } from '../signing/types';
 
 export const getNonce = () => {
   return randomBytes(64);
@@ -43,12 +43,12 @@ export const randomEthSigner = async (
   return signer;
 };
 
-export const randomEth712CompatibleSigner = async (): Promise<MinSigner> => {
-  const wallet = Wallet.createRandom(ethers.provider);
-  await setBalance(wallet.address, parseUnits('167', 'ether'));
+// export const randomEth712CompatibleSigner = async (): Promise<MinSigner> => {
+//   const wallet = Wallet.createRandom(ethers.provider);
+//   await setBalance(wallet.address, parseUnits('167', 'ether'));
 
-  return wallet;
-};
+//   return wallet;
+// };
 
 export const randomBytes = (length: number = 64) => {
   return faker.string.hexadecimal({

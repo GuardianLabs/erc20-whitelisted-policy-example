@@ -4,61 +4,83 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import {
   EnforcedToken,
+  EnforcedToken__factory,
   WhitelistArtifact,
+  WhitelistArtifact__factory,
   WhitelistPolicyHandler,
+  WhitelistPolicyHandler__factory,
 } from '../src/typechain';
+import { check, randomEthSigner } from './test-helpers';
 
 describe('EnforcedToken', function () {
   let token: EnforcedToken;
+  let policyHandler: WhitelistPolicyHandler;
   let whitelistArtifact: WhitelistArtifact;
-  let policy: WhitelistPolicyHandler;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
   let user3: HardhatEthersSigner;
 
-  before(async function () {
+  const staticSigner = async () => {
+    const staticSignerAddress = '0xd0b3F3eF4B41fE1db84c1DbBf1798deAE9Ffd0A5';
+    return randomEthSigner(staticSignerAddress);
+  };
+
+  const policyInitParams = async () => {
+    return <InitParamsStruct>(
+      (await import('../policy/Whitelist.json', { assert: { type: 'json' } }))
+        .default
+    );
+  };
+
+  before(async () => {
     [owner, user1, user2, user3] = await ethers.getSigners();
 
+    // the 'deploySigner' retains the same no matter what .env mnemonic or private key is
+    const deploySigner = await staticSigner();
+    // console.log(deploySigner.address)
+
     // Deploy whitelist artifact contract (empty initially - no destinations added)
-    const WhitelistArtifactFactory =
-      await ethers.getContractFactory('WhitelistArtifact');
+    const WhitelistArtifactFactory = new WhitelistArtifact__factory(
+      deploySigner,
+    );
     whitelistArtifact = await WhitelistArtifactFactory.deploy();
     await whitelistArtifact.waitForDeployment();
 
+    // tranfer ownership to owner signer declared in tests
+    await whitelistArtifact.transferOwnership(owner);
+    whitelistArtifact = whitelistArtifact.connect(owner);
+
+    // console.log('whitelistArtifact', await whitelistArtifact.getAddress())
+
     // Deploy token contract
-    const EnforcedTokenFactory =
-      await ethers.getContractFactory('EnforcedToken');
+    const EnforcedTokenFactory = new EnforcedToken__factory(owner);
     token = await EnforcedTokenFactory.deploy();
     await token.waitForDeployment();
 
     // Deploy whitelist policy contract
-    const WhitelistPolicyFactory =
-      await ethers.getContractFactory('WhitelistPolicyHandler');
-    policy = await WhitelistPolicyFactory.deploy(await token.getAddress());
-    await policy.waitForDeployment();
+    const WhitelistPolicyFactory = new WhitelistPolicyHandler__factory(owner);
+    const policyAdmin = await token.getAddress(); // tokem contract is policy adming
+    policyHandler = await WhitelistPolicyFactory.deploy(policyAdmin);
+    await policyHandler.waitForDeployment();
 
-    console.log(
+    /* console.log(
       'WhitelistArtifact deployed to:',
       await whitelistArtifact.getAddress(),
     );
-    console.log('NODE_ID:', await token.NODE_ID());
+    console.log('NODE_ID:', await token.NODE_ID()); */
 
     // Mint some tokens to users for testing
     await token.mintToAddress(user1.address, ethers.parseEther('100'));
     await token.mintToAddress(user2.address, ethers.parseEther('100'));
 
     // Set up the policy with the whitelist definition
-    const definition = <InitParamsStruct>(
-      (await import('../policy/Whitelist.json', { assert: { type: 'json' } }))
-        .default
-    );
-    await token.assignPolicyAddress(await policy.getAddress());
-    await token.setPolicyDefinition(definition);
+    const initParams = await policyInitParams();
+    await token.assignPolicy(initParams, await policyHandler.getAddress());
   });
 
   describe('Policy enforcement flow', function () {
-    it('should fail to transfer when policy is attached but no addresses are whitelisted', async function () {
+    it('should fail to transfer when policy is attached but no addresses are whitelisted', async () => {
       // Verify whitelist is empty (policy is already attached in before hook)
       expect(await whitelistArtifact.whitelistCount()).to.equal(0);
       expect(await whitelistArtifact.isWhitelisted(user3.address)).to.be.false;
@@ -69,7 +91,7 @@ describe('EnforcedToken', function () {
       ).to.be.revertedWith('Not whitelisted');
     });
 
-    it('should allow transfer when destination is whitelisted', async function () {
+    it('should allow transfer when destination is whitelisted', async () => {
       // Add user3 to whitelist
       await whitelistArtifact.addToWhitelist([user3.address]);
 
@@ -83,7 +105,7 @@ describe('EnforcedToken', function () {
       ).to.not.be.reverted;
     });
 
-    it('should fail transfer after removing address from whitelist', async function () {
+    it('should fail transfer after removing address from whitelist', async () => {
       // user3 should still be whitelisted from previous test
       expect(await whitelistArtifact.isWhitelisted(user3.address)).to.be.true;
 
@@ -105,14 +127,14 @@ describe('EnforcedToken', function () {
       ).to.be.revertedWith('Not whitelisted');
     });
 
-    it('should fail transfer after nuking whitelist', async function () {
+    it('should fail transfer after nuking whitelist', async () => {
       // Add multiple users to whitelist for this test
       await whitelistArtifact.addToWhitelist([user2.address, user3.address]);
 
       // Verify multiple addresses are whitelisted
-      expect(await whitelistArtifact.isWhitelisted(user2.address)).to.be.true;
-      expect(await whitelistArtifact.isWhitelisted(user3.address)).to.be.true;
-      expect(await whitelistArtifact.whitelistCount()).to.equal(2);
+      check(await whitelistArtifact.isWhitelisted(user2.address), true);
+      check(await whitelistArtifact.isWhitelisted(user3.address), true);
+      check(await whitelistArtifact.whitelistCount(), 2n);
 
       // Transfer should succeed before nuking
       await token
@@ -137,7 +159,7 @@ describe('EnforcedToken', function () {
       ).to.be.revertedWith('Not whitelisted');
     });
 
-    it('should work with transferFrom as well as transfer', async function () {
+    it('should work with transferFrom as well as transfer', async () => {
       // Add user3 to whitelist for this test
       await whitelistArtifact.addToWhitelist([user3.address]);
 
@@ -166,7 +188,7 @@ describe('EnforcedToken', function () {
   });
 
   describe('Whitelist getters and functionality', function () {
-    beforeEach(async function () {
+    beforeEach(async () => {
       // Add some addresses to whitelist for testing getters
       await whitelistArtifact.addToWhitelist([
         user1.address,
@@ -175,14 +197,14 @@ describe('EnforcedToken', function () {
       ]);
     });
 
-    it('should correctly return whitelist status for individual addresses', async function () {
+    it('should correctly return whitelist status for individual addresses', async () => {
       expect(await whitelistArtifact.isWhitelisted(user1.address)).to.be.true;
       expect(await whitelistArtifact.isWhitelisted(user2.address)).to.be.true;
       expect(await whitelistArtifact.isWhitelisted(user3.address)).to.be.true;
       expect(await whitelistArtifact.isWhitelisted(owner.address)).to.be.false;
     });
 
-    it('should return correct whitelist count', async function () {
+    it('should return correct whitelist count', async () => {
       expect(await whitelistArtifact.whitelistCount()).to.equal(3);
 
       // Remove one address
@@ -194,7 +216,7 @@ describe('EnforcedToken', function () {
       expect(await whitelistArtifact.whitelistCount()).to.equal(3);
     });
 
-    it('should return complete whitelist array', async function () {
+    it('should return complete whitelist array', async () => {
       const whitelistArray = await whitelistArtifact.getWhitelist();
       expect(whitelistArray.length).to.equal(3);
       expect(whitelistArray).to.include(user1.address);
@@ -202,7 +224,7 @@ describe('EnforcedToken', function () {
       expect(whitelistArray).to.include(user3.address);
     });
 
-    it('should handle duplicate additions gracefully', async function () {
+    it('should handle duplicate additions gracefully', async () => {
       // Try to add user1 again (already in whitelist)
       await whitelistArtifact.addToWhitelist([user1.address]);
 
@@ -213,7 +235,7 @@ describe('EnforcedToken', function () {
       expect(await whitelistArtifact.isWhitelisted(user1.address)).to.be.true;
     });
 
-    it('should handle removal of non-existent addresses gracefully', async function () {
+    it('should handle removal of non-existent addresses gracefully', async () => {
       const initialCount = await whitelistArtifact.whitelistCount();
 
       // Try to remove an address that's not in the whitelist
@@ -223,7 +245,7 @@ describe('EnforcedToken', function () {
       expect(await whitelistArtifact.whitelistCount()).to.equal(initialCount);
     });
 
-    it('should maintain proper state after multiple operations', async function () {
+    it('should maintain proper state after multiple operations', async () => {
       // Remove all current addresses
       await whitelistArtifact.removeFromWhitelist([
         user1.address,
@@ -248,7 +270,7 @@ describe('EnforcedToken', function () {
   });
 
   describe('Access control', function () {
-    it('should only allow owner to modify whitelist', async function () {
+    it('should only allow owner to modify whitelist', async () => {
       // Non-owner should not be able to add to whitelist
       await expect(
         whitelistArtifact.connect(user1).addToWhitelist([user2.address]),
@@ -274,17 +296,24 @@ describe('EnforcedToken', function () {
       );
     });
 
-    it('should only allow token owner to assign policy', async function () {
+    it('should only allow token owner to assign policy', async () => {
+      const initParams = await policyInitParams();
+
+      const WhitelistPolicyFactory = new WhitelistPolicyHandler__factory(owner);
+      const policyAdmin = await token.getAddress(); // tokem contract is policy adming
+      policyHandler = await WhitelistPolicyFactory.deploy(policyAdmin);
+      await policyHandler.waitForDeployment();
+
       // Non-owner should not be able to assign policy
       await expect(
         token
           .connect(user1)
-          .assignPolicyAddress(await whitelistArtifact.getAddress()),
+          .assignPolicy(initParams, await policyHandler.getAddress()),
       ).to.be.revertedWithCustomError(token, 'OwnableUnauthorizedAccount');
 
       // Owner should be able to assign policy
       await expect(
-        token.assignPolicyAddress(await whitelistArtifact.getAddress()),
+        token.assignPolicy(initParams, await policyHandler.getAddress()),
       ).to.not.be.reverted;
     });
   });

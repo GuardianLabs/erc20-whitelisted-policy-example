@@ -5,6 +5,6 @@ interface IWhitelistStub {
     function evaluate(address _address) external view returns (bool);
 }
 
-interface IBlacklist {
+interface IBlacklistStub {
     function evaluate(address _address) external view returns (bool);
 }
