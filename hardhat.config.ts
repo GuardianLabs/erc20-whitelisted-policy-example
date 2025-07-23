@@ -88,7 +88,7 @@ const config: HardhatUserConfig = {
       polygonMainnet: getPolygonscanApiKey(),
       polygonAmoy: getPolygonscanApiKey(),
       baseMainnet: getBasescanApiKey(),
-      baseSepolia: getBasescanApiKey(),
+      "base-sepolia": getBasescanApiKey(),
     },
     customChains: [
       {
