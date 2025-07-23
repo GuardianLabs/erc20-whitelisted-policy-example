@@ -21,7 +21,7 @@ export const deployWhitelist = async (
   ownerAddress: string,
   deploymentId: string,
 ) => {
-  console.log(ownerAddress, 'ownerAddress');
+  // console.log(ownerAddress, 'ownerAddress');
   const { whitelistStub: whitelist } = await hre.ignition.deploy(
     whitelistDeployer,
     {

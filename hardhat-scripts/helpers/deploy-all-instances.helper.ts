@@ -7,6 +7,7 @@ import { EnforcedGRDToken, WhitelistStub } from '../../src';
 // import { ReflectionParams } from '../types';
 import {
   getWhitelistEditor,
+  SN,
   whitelistedAddresses,
 } from '../config/whitelist-config.helper';
 import { deployErc20, deployWhitelist } from './deployments.helper';
@@ -28,10 +29,7 @@ const writeDeploymentId = async (
 const loggedModules = [erc20Deployer, whitelistDeployer];
 
 export const deployInstances = async (isLogging: boolean = true) => {
-  console.log(111);
   const [{ address: defaultSender }] = await hre.ethers.getSigners();
-
-  console.log(defaultSender);
 
   const chainId = hre.network.config.chainId ?? 'chainIdNotProvided'; // note: chain id always has to be provided under regular circumstances
   const deploymentId = createUniqueId(chainId);
@@ -50,6 +48,7 @@ export const deployInstances = async (isLogging: boolean = true) => {
 
   await erc20Instance.assignPolicyAddress(await whitelistInstance.getAddress());
   await whitelistInstance.addToWhitelist(whitelistedAddresses());
+  await whitelistInstance.transferOwnership(SN);
 
   // results
   if (isLogging) {
