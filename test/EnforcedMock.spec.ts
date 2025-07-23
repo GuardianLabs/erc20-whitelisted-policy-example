@@ -3,16 +3,16 @@ import { expect } from 'chai';
 import { parseEther } from 'ethers';
 import { ethers } from 'hardhat';
 import {
-  EnforcedTokenMock,
-  EnforcedTokenMock__factory,
+  EnforcedGRDToken,
+  EnforcedGRDToken__factory,
   WhitelistStub,
   WhitelistStub__factory,
 } from '../src/typechain';
 import { check, randomEthAddress } from './test-helpers';
 
-describe('EnforcedTokenMock', () => {
+describe.only('EnforcedGRDToken', () => {
   let whitelist: WhitelistStub;
-  let token: EnforcedTokenMock;
+  let token: EnforcedGRDToken;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -20,6 +20,7 @@ describe('EnforcedTokenMock', () => {
 
   before(async () => {
     [owner, user1, user2, user3] = await ethers.getSigners();
+    console.log(owner.address);
 
     // Deploy whitelist contract (empty initially - no destinations added)
     const WhitelistFactory = new WhitelistStub__factory(owner);
@@ -27,7 +28,7 @@ describe('EnforcedTokenMock', () => {
     await whitelist.waitForDeployment();
 
     // Deploy token contract
-    const TokenFactory = new EnforcedTokenMock__factory(owner);
+    const TokenFactory = new EnforcedGRDToken__factory(owner);
     token = await TokenFactory.deploy();
     await token.waitForDeployment();
 
