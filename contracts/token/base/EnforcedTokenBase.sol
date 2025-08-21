@@ -7,7 +7,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IPolicyHandler } from "@guardian-network/policy-contracts/contracts/IPolicyHandler.sol";
 import { ExecVariables, InitParams } from "@guardian-network/policy-contracts/contracts/Types.sol";
 
-contract ERC20PolicyEnforced is ERC20, ERC165, Ownable {
+contract EnforcedTokenBase is ERC20, ERC165, Ownable {
     IPolicyHandler private policyHandler;
     bytes32 public constant NODE_ID = keccak256("WHITELIST_ARTIFACT_NODE_ID");
 
@@ -43,6 +43,8 @@ contract ERC20PolicyEnforced is ERC20, ERC165, Ownable {
     }
 
     function _beforeTransfer(address to) private {
+        require(address(policyHandler) != address(0), "Policy not assigned");
+
         bytes[] memory policyInputEncoded = new bytes[](1);
         policyInputEncoded[0] = abi.encode(to);
 

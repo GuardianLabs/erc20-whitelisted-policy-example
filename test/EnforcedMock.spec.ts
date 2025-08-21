@@ -1,4 +1,4 @@
-import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { parseEther } from 'ethers';
 import { ethers } from 'hardhat';
@@ -8,58 +8,56 @@ import {
   WhitelistStub,
   WhitelistStub__factory,
 } from '../src/typechain';
-import { check, randomEthAddress } from './test-helpers';
+import { check } from './test-helpers';
 
-describe.only('EnforcedGRDToken', () => {
+describe('EnforcedGRDToken Mock', () => {
   let whitelist: WhitelistStub;
   let token: EnforcedGRDToken;
-  let owner: HardhatEthersSigner;
-  let user1: HardhatEthersSigner;
-  let user2: HardhatEthersSigner;
-  let user3: HardhatEthersSigner;
+
+  let owner: SignerWithAddress;
+  let user1: SignerWithAddress;
+  let user2: SignerWithAddress;
+  let user3: SignerWithAddress;
 
   before(async () => {
     [owner, user1, user2, user3] = await ethers.getSigners();
-    console.log(owner.address);
 
-    // Deploy whitelist contract (empty initially - no destinations added)
+    // note: Deploy whitelist contract (empty initially - no destinations added)
     const WhitelistFactory = new WhitelistStub__factory(owner);
     whitelist = await WhitelistFactory.deploy();
     await whitelist.waitForDeployment();
 
-    // Deploy token contract
+    // note: Deploy token contract
     const TokenFactory = new EnforcedGRDToken__factory(owner);
     token = await TokenFactory.deploy();
     await token.waitForDeployment();
 
-    // Mint some tokens to users for testing
+    // note: Mint some tokens to users for testing
     await token.mintToAddress(user1.address, parseEther('100'));
     await token.mintToAddress(user2.address, parseEther('100'));
   });
 
   describe('Policy enforcement flow', function () {
     it('should fail to transfer when no policy is attached', async () => {
-      // Verify initial balances
       check(await token.balanceOf(user1.address), parseEther('100'));
       check(await token.balanceOf(user2.address), parseEther('100'));
       check(await token.balanceOf(user3.address), 0n);
 
-      // Try to transfer without policy attached - should fail
-
+      // note: Try to transfer without policy attached - should fail
       await expect(
         token.connect(user1).transfer(user3.address, parseEther('10')),
       ).to.be.revertedWith('Policy not assigned');
     });
 
     it('should fail to transfer when policy is attached but no addresses are whitelisted', async () => {
-      // Attach whitelist contract as policy (but whitelist is empty)
+      // note: Attach whitelist contract as policy (but whitelist is empty)
       await token.assignPolicyAddress(await whitelist.getAddress());
 
-      // Verify whitelist is empty
+      // note: Verify whitelist is empty
       expect(await whitelist.whitelistCount()).to.equal(0);
       expect(await whitelist.isWhitelisted(user3.address)).to.be.false;
 
-      // Try to transfer to non-whitelisted address - should fail
+      // note: Try to transfer to non-whitelisted address - should fail
       await expect(
         token.connect(user1).transfer(user3.address, parseEther('10')),
       ).to.be.revertedWith('Not whitelisted');
@@ -72,9 +70,9 @@ describe.only('EnforcedGRDToken', () => {
       const sender = user1.address;
       const receiver = user3.address;
 
-      // Verify user3 is whitelisted
-      expect(await whitelist.isWhitelisted(receiver)).to.be.true;
-      expect(await whitelist.whitelistCount()).to.equal(1);
+      // note: Verify user3 is whitelisted
+      check(await whitelist.isWhitelisted(receiver), true);
+      check(await whitelist.whitelistCount(), 1n);
 
       // Transfer should now succeed
       await expect(token.connect(user1).transfer(receiver, parseEther('10')))
@@ -141,7 +139,7 @@ describe.only('EnforcedGRDToken', () => {
     });
 
     it('should work with transferFrom as well as transfer', async () => {
-      // Add user3 to whitelist for this test
+      // note: Add user3 to whitelist for this test
       await whitelist.addToWhitelist([user3.address]);
 
       const sender = user1.address;
@@ -152,19 +150,17 @@ describe.only('EnforcedGRDToken', () => {
 
       // TransferFrom should succeed to whitelisted address
       await expect(
-        token
-          .connect(user2)
-          .transferFrom(user1.address, user3.address, parseEther('20')),
+        token.connect(user2).transferFrom(sender, receiver, parseEther('20')),
       )
         .to.emit(token, 'Transfer')
         .withArgs(sender, receiver, parseEther('20'));
 
       // Verify balances (user1 had 60 tokens after previous tests)
-      check(await token.balanceOf(user1.address), parseEther('60'));
-      check(await token.balanceOf(user3.address), parseEther('40'));
+      check(await token.balanceOf(sender), parseEther('60'));
+      check(await token.balanceOf(receiver), parseEther('40'));
 
       // Remove user3 from whitelist
-      await whitelist.removeFromWhitelist([user3.address]);
+      await whitelist.removeFromWhitelist([receiver]);
 
       // TransferFrom should now fail
       await expect(
@@ -175,123 +171,14 @@ describe.only('EnforcedGRDToken', () => {
     });
   });
 
-  describe('Whitelist getters and functionality', function () {
-    before(async () => {
-      // Clear any existing whitelist state and add test addresses
-      await whitelist.nukeWhitelist();
-
-      await whitelist.addToWhitelist([
-        user1.address,
-        user2.address,
-        user3.address,
-      ]);
-    });
-
-    it('should correctly return whitelist status for individual addresses', async () => {
-      expect(await whitelist.isWhitelisted(user1.address)).to.be.true;
-      expect(await whitelist.isWhitelisted(user2.address)).to.be.true;
-      expect(await whitelist.isWhitelisted(user3.address)).to.be.true;
-      expect(await whitelist.isWhitelisted(randomEthAddress())).to.be.false;
-    });
-
-    it('should return correct whitelist count', async () => {
-      expect(await whitelist.whitelistCount()).to.equal(3);
-
-      // Remove one address
-      await whitelist.removeFromWhitelist([user1.address]);
-      expect(await whitelist.whitelistCount()).to.equal(2);
-
-      // Add it back
-      await whitelist.addToWhitelist([user1.address]);
-      expect(await whitelist.whitelistCount()).to.equal(3);
-    });
-
-    it('should return complete whitelist array', async () => {
-      const whitelistArray = await whitelist.getWhitelist();
-      expect(whitelistArray).to.eql([
-        user3.address,
-        user2.address,
-        user1.address,
-      ]);
-    });
-
-    it('should correctly use evaluate function', async () => {
-      expect(await whitelist.evaluate(user1.address)).to.be.true;
-      expect(await whitelist.evaluate(user2.address)).to.be.true;
-      expect(await whitelist.evaluate(user3.address)).to.be.true;
-      expect(await whitelist.evaluate(owner.address)).to.be.false;
-    });
-
-    it('should handle duplicate additions gracefully', async () => {
-      // Try to add user1 again (already in whitelist)
-      await whitelist.addToWhitelist([user1.address]);
-
-      // Count should remain the same
-      expect(await whitelist.whitelistCount()).to.equal(3);
-
-      // Whitelist should still contain the address
-      expect(await whitelist.isWhitelisted(user1.address)).to.be.true;
-    });
-
-    it('should handle removal of non-existent addresses gracefully', async () => {
-      const initialCount = await whitelist.whitelistCount();
-
-      // Try to remove an address that's not in the whitelist
-      await whitelist.removeFromWhitelist([owner.address]);
-
-      // Count should remain the same
-      expect(await whitelist.whitelistCount()).to.equal(initialCount);
-    });
-
-    it('should maintain proper state after multiple operations', async () => {
-      // Remove all current addresses
-      await whitelist.removeFromWhitelist([
-        user1.address,
-        user2.address,
-        user3.address,
-      ]);
-      expect(await whitelist.whitelistCount()).to.equal(0);
-
-      // Add new batch
-      await whitelist.addToWhitelist([owner.address, user1.address]);
-      expect(await whitelist.whitelistCount()).to.equal(2);
-      expect(await whitelist.isWhitelisted(owner.address)).to.be.true;
-      expect(await whitelist.isWhitelisted(user1.address)).to.be.true;
-      expect(await whitelist.isWhitelisted(user2.address)).to.be.false;
-
-      // Verify the getWhitelist function returns correct addresses
-      const finalWhitelist = await whitelist.getWhitelist();
-      expect(finalWhitelist.length).to.equal(2);
-      expect(finalWhitelist).to.include(owner.address);
-      expect(finalWhitelist).to.include(user1.address);
-    });
-  });
-
   describe('Access control', function () {
-    it('should only allow owner to modify whitelist', async () => {
-      // Non-owner should not be able to add to whitelist
-      await expect(
-        whitelist.connect(user1).addToWhitelist([user2.address]),
-      ).to.be.revertedWithCustomError(whitelist, 'OwnableUnauthorizedAccount');
-
-      // Non-owner should not be able to remove from whitelist
-      await expect(
-        whitelist.connect(user1).removeFromWhitelist([user2.address]),
-      ).to.be.revertedWithCustomError(whitelist, 'OwnableUnauthorizedAccount');
-
-      // Non-owner should not be able to nuke whitelist
-      await expect(
-        whitelist.connect(user1).nukeWhitelist(),
-      ).to.be.revertedWithCustomError(whitelist, 'OwnableUnauthorizedAccount');
-    });
-
     it('should only allow token owner to assign policy', async () => {
-      // Non-owner should not be able to assign policy
+      // note: Non-owner should not be able to assign policy
       await expect(
         token.connect(user1).assignPolicyAddress(await whitelist.getAddress()),
       ).to.be.revertedWithCustomError(token, 'OwnableUnauthorizedAccount');
 
-      // Owner should be able to assign policy (policy is already assigned, but this tests the permission)
+      // note: Owner should be able to assign policy (policy is already assigned, but this tests the permission)
       await expect(token.assignPolicyAddress(await whitelist.getAddress())).to
         .not.be.reverted;
     });

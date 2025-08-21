@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.29;
 
-import { ERC20PolicyEnforcedMock } from "./basis/ERC20PolicyEnforcedMock.sol";
+import { EnforcedTokenMockBase } from "./basis/EnforcedTokenMockBase.sol";
 
-contract EnforcedGRDToken is ERC20PolicyEnforcedMock {
-    constructor() ERC20PolicyEnforcedMock("ERC20EnforcedMock", "GRDERC20Mock") {}
+contract EnforcedGRDToken is EnforcedTokenMockBase {
+    constructor() EnforcedTokenMockBase("ERC20EnforcedMock", "GRDERC20Mock") {}
 }

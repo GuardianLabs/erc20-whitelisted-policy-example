@@ -6,7 +6,7 @@ import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IWhitelistStub } from "../interfaces/Interfaces.sol";
 
-contract ERC20PolicyEnforcedMock is ERC20, ERC165, Ownable {
+contract EnforcedTokenMockBase is ERC20, ERC165, Ownable {
     IWhitelistStub internal policy;
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable(msg.sender) {
@@ -31,16 +31,16 @@ contract ERC20PolicyEnforcedMock is ERC20, ERC165, Ownable {
         _assignPolicyAddress(policyAddress);
     }
 
-    function _assignPolicyAddress(address policyAddress) internal {
-        policy = IWhitelistStub(policyAddress);
-    }
-
     function mintToAddress(address to, uint256 amount /* Anyone can mint */) public {
         _mint(to, amount);
     }
 
     function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
         return interfaceId == type(IERC20).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function _assignPolicyAddress(address policyAddress) internal {
+        policy = IWhitelistStub(policyAddress);
     }
 
     function _beforeTransfer(address to) private view {
